@@ -1,5 +1,11 @@
 Revision history for Perl extension Data::JavaScript::Anon
 
+0.2  Thu Nov 20 2003
+	- Added a highly robust and more accurate regex test for numbers.
+	- Added the is_a_number method.
+	- Fixed the bug from #CPAN 4056
+	- Did a clean up and shrink of the code. Possibly saved enough bytes
+	  to cover the addition of the regex code.
+
 0.1  Sun May  4 8:30:23 2003
 	- original version
-

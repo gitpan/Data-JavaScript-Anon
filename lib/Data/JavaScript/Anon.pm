@@ -7,10 +7,27 @@ package Data::JavaScript::Anon;
 use strict;
 use UNIVERSAL 'isa';
 
-use vars qw{$VERSION $errstr};
+use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY};
 BEGIN {
-	$VERSION = "0.1";
-	$errstr = ''; 
+	$VERSION = "0.2";
+	$errstr = '';
+
+	# Attempt to define a single, all encompasing,
+	# regex for detecting a legal JavaScript number.
+	# We do not support the exotic values, such as Infinite and NaN.
+	my $_sci = qr/[eE](?:\+|\-)?\d+/;                  # The scientific notation exponent ( e.g. 'e+12' )
+	my $_dec = qr/\.\d+/;                              # The decimal section ( e.g. '.0212' )
+	my $_int = qr/(?:[1-9]\d*|0)/;                 # The integers section ( e.g. '2312' )
+	my $real = qr/(?:$_int(?:$_dec)?|$_dec)(?:$_sci)?/; # Merge the integer, decimal and scientific parts
+	my $_hex = qr/0[xX][0-9a-fA-F]+/;                  # Hexidecimal notation
+	my $_oct = qr/0[0-8]+/;                            # Octal notation
+
+	# The final combination of all posibilities for a straight number
+	# The string to match must have no extra characters
+	$RE_NUMERIC = qr/^(?:\+|\-)??(?:$real|$_hex|$_oct)$/;
+
+	# The numeric for of the hash key is similar, but without the + or - allowed
+	$RE_NUMERIC_HASHKEY = qr/^(?:$real|$_hex|$_oct)$/;
 }
 
 
@@ -49,49 +66,46 @@ sub anon_dump {
 	# Handle the array case by generating an anonymous array
 	if ( isa( $something, 'ARRAY' ) ) {
 		# Create and return the array
-		return "[ "
-			. join( ', ', map {
-				$class->anon_dump($_, $processed)
-				} @$something )
-			. " ]";
+		my $list = join ', ', map { $class->anon_dump($_, $processed) } @$something;
+		return "[ $list ]";
 	}
 
 	# Handle the hash case by generating an anonymous object/hash
 	if ( isa( $something, 'HASH' ) ) {
 		# Create and return the anonymous hash
-		return "{ "
-			. join( ', ', map {
+		my $pairs = join ', ', map {
 				$class->anon_hash_key( $_ )
-				. ': '
-				. $class->anon_dump( $something->{$_}, $processed )
-				} keys %$something )
-			. " }";
+					. ': '
+					. $class->anon_dump( $something->{$_}, $processed )
+				} keys %$something;
+		return "{ $pairs }";
 	}
 
-	return $class->_err_not_supported( $something );
+	$class->_err_not_supported( $something );
 }
 
 # Same thing, but creating a variable
 sub var_dump {
 	my $class = shift;
 	my $name = shift or return undef;
-	my $something = shift;
-
-	return "var $name = "
-		. $class->anon_dump( $something )
-		. ';';
+	my $value = $class->anon_dump( shift );
+	"var $name = $value;";
 }
 
 # Wrap some JavaScript in a HTML script tag
 sub script_wrap {
-	my $class = shift;
-	my $javascript = shift;
-
-	return "<script language=\"JavaScript\" type=\"text/JavaScript\">\n"
-		. "<!--\n\n"
-		. $javascript
-		. "\n// -->\n"
+	"<script language=\"JavaScript\" type=\"text/JavaScript\">\n"
+		. "<!--\n\n$_[1]\n// -->\n"
 		. "</script>";
+}
+
+# Is a particular string a legal JavaScript number.
+# Returns true if a legal JavaScript number.
+# Returns false otherwise.
+sub is_a_number {
+	my $class = shift;
+	my $number = (defined $_[0] and ! ref $_[0]) ? shift : '';
+	$number =~ m/$RE_NUMERIC/ ? 1 : '';
 }
 
 
@@ -106,13 +120,9 @@ sub script_wrap {
 sub var_scalar {
 	my $class = shift;
 	my $name = shift or return undef;
-	my $scalar_ref = isa( $_[0], 'SCALAR' )
-		? shift : return undef;
-
-	# Return the string
-	return "var $name = "
-		. $class->js_value( $$scalar_ref )
-		. ";";
+	my $scalar_ref = isa( $_[0], 'SCALAR' ) ? shift : return undef;
+	my $value = $class->js_value( $$scalar_ref ) or return undef;
+	"var $name = $value;";
 }
 
 # Create a Javascript array given the javascript array name
@@ -120,13 +130,9 @@ sub var_scalar {
 sub var_array {
 	my $class = shift;
 	my $name = shift or return undef;
-	my $array_ref = isa( $_[0], 'ARRAY' )
-		? shift : return undef;
-
-	# Create and return the array
-	return "var $name = new Array( "
-		. join( ', ', map { $class->anon_dump($_) } @$array_ref )
-		. " );";
+	my $array_ref = isa( $_[0], 'ARRAY' ) ? shift : return undef;
+	my $list = join ', ', map { $class->anon_dump($_) } @$array_ref;
+	"var $name = new Array( $list );";
 }
 
 # Create a Javascript hash ( which is just an object ), given
@@ -134,13 +140,10 @@ sub var_array {
 sub var_hash {
 	my $class = shift;
 	my $name = shift or return undef;
-	my $hash_ref = isa( $_[0], 'HASH' )
-		? shift : return undef;
-
-	# Create and return the hash
-	return "var $name = " . $class->anon_hash( $hash_ref ) . ";";
+	my $hash_ref = isa( $_[0], 'HASH' ) ? shift : return undef;
+	my $struct = $class->anon_hash( $hash_ref ) or return undef;
+	"var $name = $struct;";
 }
-
 
 
 
@@ -154,33 +157,26 @@ sub anon_scalar {
 	my $class = shift;
 	my $value = isa( $_[0], 'SCALAR' ) ? ${shift()} : shift;
 	return 'null' unless defined $value;
-	{ no warnings;
-		if ( $value eq '0' or $value != 0 ) {
-			return $value;
-		} else {
-			$value =~ s/"/\\"/g;
-			return '"' . $value . '"';
-		}
-	}
+
+	# Don't quote if it is numeric
+	return $value if $value =~ /$RE_NUMERIC/;
+
+	$value =~ s/"/\\"/g;
+	'"' . $value . '"';
 }
 
 # Turn a single perl value into a javascript hash key
 sub anon_hash_key {
 	my $class = shift;
-	my $value = shift;
-	return undef unless defined $value;
-	{ no warnings;
-		if ( $value eq '0' or $value != 0 ) {
-			return $value;
-		}
-	}
-	
-	# Don't quote if it is just a set of word characters
+	my $value = (defined $_[0] and ! ref $_[0]) ? shift : return undef;
+
+	# Don't quote if it is just a set of word characters or numeric
 	return $value if $value =~ /^\w+$/;
-	
-	# Escape as normal
+	return $value if $value =~ /$RE_NUMERIC_HASHKEY/;
+
+	# Escape and quote
 	$value =~ s/"/\\"/g;
-	return '"' . $value . '"';
+	'"' . $value . '"';
 }
 
 # Create a Javascript array given the javascript array name
@@ -188,15 +184,9 @@ sub anon_hash_key {
 sub anon_array {
 	my $class = shift;
 	my $name = shift or return undef;
-	my $array_ref = isa( $_[0], 'ARRAY' )
-		? shift : return undef;
-
-	# Create and return the array
-	return "[ "
-		. join( ', ', map {
-			$class->anon_scalar($_)
-			} @$array_ref )
-		. " ]";
+	my $array_ref = isa( $_[0], 'ARRAY' ) ? shift : return undef;
+	my $list = join ', ', map { $class->anon_scalar($_) } @$array_ref;
+	"[ $list ]";
 }
 
 # Create a Javascript hash ( which is just an object ), given
@@ -204,17 +194,13 @@ sub anon_array {
 sub anon_hash {
 	my $class = shift;
 	my $name = shift or return undef;
-	my $hash_ref = isa( $_[0], 'HASH' )
-		? shift : return undef;
-
-	# Create and return the hash
-	return "{ "
-		. join( ', ', map {
+	my $hash_ref = isa( $_[0], 'HASH' ) ? shift : return undef;
+	my $pairs = join ', ', map { 
 			$class->anon_hash_key( $_ )
-			. ': '
-			. $class->anon_scalar( $hash_ref->{$_} )
-			} keys %$hash_ref )
-		. " }";
+				. ': '
+				. $class->anon_scalar( $hash_ref->{$_} )
+			} keys %$hash_ref;
+	"{ $pairs }";
 }
 
 
@@ -226,20 +212,20 @@ sub anon_hash {
 
 sub _err_found_twice {
 	my $class = shift;
-	my $something = shift;
-	$errstr = 'Found ' . (ref $something or 'a reference')
-		. ' in your dump more than once. '
-		. 'Serialize::Javascript does not support complex, circular, or cross-linked data structures';
-	return undef;
+	my $something = ref $_[0] || 'a reference';
+	$errstr = "Found $something in your dump more than once. "
+		. "Serialize::Javascript does not support complex, "
+		. "circular, or cross-linked data structures";
+	undef;
 }
 
 sub _err_not_supported {
 	my $class = shift;
-	my $something = shift;
-	$errstr = (ref $something or 'A reference of unknown type')
-		. ' was found in the dump struct. '
-		. 'Serialize::Javascript only supports objects based on, or references to SCALAR, ARRAY and HASH type variables.';
-	return undef;
+	my $something = ref $_[0] || 'A reference of unknown type';
+	$errstr = "$something was found in the dump struct. "
+		. "Serialize::Javascript only supports objects based on, "
+		. "or references to SCALAR, ARRAY and HASH type variables.";
+	undef;
 }
 
 1;
@@ -286,8 +272,8 @@ data into your HTML templates.
 In this way, it doesn't matter WHAT the HTML template calls a
 particular variables, the data dumps just the same. This could help
 you keep the work of JavaScript and Perl programmers ( assuming you
-were using different people ) seperate, without creating work
-cross dependencies.
+were using different people ) seperate, without creating 
+cross-dependencies between their code, such as variable names.
 
 The variables you dump can also be of arbitrary depth and complexity,
 with a few limitations.
@@ -297,8 +283,16 @@ with a few limitations.
 =item ARRAY and HASH only
 
 Since arrays and hashs are all that is supported by JavaScript, they
-are the only things you can use in your structs. Although not supported,
-they will be detected, and an error returned.
+are the only things you can use in your structs. Any references or a
+different underlying type will be detected and an error returned.
+
+Note that Data::JavaScript::Anon will use the UNDERLYING type of the
+data. This means that the blessed classes or objects will be ignored
+and their data based on the object's underlying implementation type.
+
+This can be a positive thing, as you can put objects for which you expect
+a certain dump structure into the data to dump, and it will convert to 
+unblessed, more stupid, JavaScript objects cleanly.
 
 =item No Circular References
 
@@ -313,7 +307,7 @@ Although not supported, they will be detected, and an error returned.
 All methods are called as methods directly, in the form
 C<< Data::JavaScript::Anon->anon_dump( [ 'etc' ] ) >>.
 
-=head2 anon_dump( struct )
+=head2 anon_dump STRUCT
 
 The main method of the class, anon_dump takes a single arbitrary data
 struct, and converts it into an anonymous JavaScript struct.
@@ -324,55 +318,66 @@ wouldn't do a lot to it. :)
 Returns a string containing the JavaScript struct on success, or C<undef>
 if an error is found.
 
-=head2 var_dump( $name, struct )
+=head2 var_dump $name, STRUCT
 
 As above, but the C<var_dump> method allows you to specify a variable name,
 with the resulting JavaScript being C<var name = struct;>. Note that the
 method WILL put the trailing semi-colon on the string.
 
-=head2 script_wrap( $javascript )
+=head2 script_wrap $javascript
 
 The C<script_wrap> method is a quick way of wrapping a normal JavaScript html
 tag around your JavaScript.
+
+=head2 is_a_number $scalar
+
+When generating the javascript, numbers will be printed directly and not
+quoted. The C<is_a_number> method provides convenient access to the test
+that is used to see if something is a number. The test handles just about
+everything legal in JavaScript, with the one exception of the exotics, such
+as Infinite, -Infinit and NaN.
+
+Returns true is a scalar is numberic, or false otherwise.
 
 =head1 SECONDARY METHODS
 
 The following are a little less general, but may be of some use.
 
-=head2 var_scalar( $name, \$scalar )
+=head2 var_scalar $name, \$scalar
 
 Creates a named variable from a scalar reference.
 
-=head2 var_array( $name, \@array )
+=head2 var_array $name, \@array
 
 Creates a named variable from an array reference.
 
-=head2 var_hash( $name, \%hash )
+=head2 var_hash $name, \%hash
 
 Creates a named variable from a hash reference.
 
-=head2 anon_scalar( \$scalar )
+=head2 anon_scalar \$scalar
 
 Creates an anonymous JavaScript value from a scalar reference.
 
-=head2 anon_array( \@array )
+=head2 anon_array \@array
 
 Creates an anonymous JavaScript array from an array reference.
 
-=head2 anon_hash( \%hash )
+=head2 anon_hash \%hash
 
 Creates an anonymous JavaScript object from a hash reference.
 
-=head2 anon_hash_key( $value )
+=head2 anon_hash_key $value
 
 Applys the formatting for a key in a JavaScript object
 
-
 =head1 SUPPORT
 
-Contact the author or file a bug at
+Bugs should be reported via the CPAN bug tracker at:
 
 http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data%3A%3AJavaScript%3A%3AAnon
+
+For other comments or queries, contact the author.
 
 =head1 AUTHOR
 
