@@ -9,18 +9,18 @@ use UNIVERSAL 'isa';
 
 use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY};
 BEGIN {
-	$VERSION = "0.2";
-	$errstr = '';
+	$VERSION = '0.3';
+	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
 	# regex for detecting a legal JavaScript number.
 	# We do not support the exotic values, such as Infinite and NaN.
-	my $_sci = qr/[eE](?:\+|\-)?\d+/;                  # The scientific notation exponent ( e.g. 'e+12' )
-	my $_dec = qr/\.\d+/;                              # The decimal section ( e.g. '.0212' )
-	my $_int = qr/(?:[1-9]\d*|0)/;                 # The integers section ( e.g. '2312' )
+	my $_sci = qr/[eE](?:\+|\-)?\d+/;                   # The scientific notation exponent ( e.g. 'e+12' )
+	my $_dec = qr/\.\d+/;                               # The decimal section ( e.g. '.0212' )
+	my $_int = qr/(?:[1-9]\d*|0)/;                      # The integers section ( e.g. '2312' )
 	my $real = qr/(?:$_int(?:$_dec)?|$_dec)(?:$_sci)?/; # Merge the integer, decimal and scientific parts
-	my $_hex = qr/0[xX][0-9a-fA-F]+/;                  # Hexidecimal notation
-	my $_oct = qr/0[0-8]+/;                            # Octal notation
+	my $_hex = qr/0[xX][0-9a-fA-F]+/;                   # Hexidecimal notation
+	my $_oct = qr/0[0-8]+/;                             # Octal notation
 
 	# The final combination of all posibilities for a straight number
 	# The string to match must have no extra characters
@@ -171,7 +171,7 @@ sub anon_hash_key {
 	my $value = (defined $_[0] and ! ref $_[0]) ? shift : return undef;
 
 	# Don't quote if it is just a set of word characters or numeric
-	return $value if $value =~ /^\w+$/;
+	return $value if $value =~ /^[^\W\d]\w*$/;
 	return $value if $value =~ /$RE_NUMERIC_HASHKEY/;
 
 	# Escape and quote
@@ -214,7 +214,7 @@ sub _err_found_twice {
 	my $class = shift;
 	my $something = ref $_[0] || 'a reference';
 	$errstr = "Found $something in your dump more than once. "
-		. "Serialize::Javascript does not support complex, "
+		. "Data::JavaScript::Anon does not support complex, "
 		. "circular, or cross-linked data structures";
 	undef;
 }
@@ -223,7 +223,7 @@ sub _err_not_supported {
 	my $class = shift;
 	my $something = ref $_[0] || 'A reference of unknown type';
 	$errstr = "$something was found in the dump struct. "
-		. "Serialize::Javascript only supports objects based on, "
+		. "Data::JavaScript::Anon only supports objects based on, "
 		. "or references to SCALAR, ARRAY and HASH type variables.";
 	undef;
 }
@@ -381,9 +381,7 @@ For other comments or queries, contact the author.
 
 =head1 AUTHOR
 
-    Adam Kennedy
-    cpan@ali.as
-    http//ali.as/
+Adam Kennedy (Maintainer), L<http://ali.as/>, cpan@ali.as
 
 =head1 COPYRIGHT
 
