@@ -9,7 +9,7 @@ use UNIVERSAL 'isa';
 
 use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY};
 BEGIN {
-	$VERSION = '0.3';
+	$VERSION = '0.4';
 	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
@@ -38,7 +38,7 @@ BEGIN {
 # Top Level Dumping Methods
 
 sub anon_dump {
-	my $class = shift;
+	my $class     = shift;
 	my $something = shift;
 	my $processed = shift || {};
 
@@ -87,23 +87,21 @@ sub anon_dump {
 # Same thing, but creating a variable
 sub var_dump {
 	my $class = shift;
-	my $name = shift or return undef;
+	my $name  = shift or return undef;
 	my $value = $class->anon_dump( shift );
 	"var $name = $value;";
 }
 
 # Wrap some JavaScript in a HTML script tag
 sub script_wrap {
-	"<script language=\"JavaScript\" type=\"text/JavaScript\">\n"
-		. "<!--\n\n$_[1]\n// -->\n"
-		. "</script>";
+	"<script language=\"JavaScript\" type=\"text/JavaScript\">\n$_[1]\n</script>";
 }
 
 # Is a particular string a legal JavaScript number.
 # Returns true if a legal JavaScript number.
 # Returns false otherwise.
 sub is_a_number {
-	my $class = shift;
+	my $class  = shift;
 	my $number = (defined $_[0] and ! ref $_[0]) ? shift : '';
 	$number =~ m/$RE_NUMERIC/ ? 1 : '';
 }
@@ -118,30 +116,30 @@ sub is_a_number {
 # Create a Javascript scalar given the javascript variable name
 # and a reference to the scalar.
 sub var_scalar {
-	my $class = shift;
-	my $name = shift or return undef;
+	my $class      = shift;
+	my $name       = shift or return undef;
 	my $scalar_ref = isa( $_[0], 'SCALAR' ) ? shift : return undef;
-	my $value = $class->js_value( $$scalar_ref ) or return undef;
+	my $value      = $class->js_value( $$scalar_ref ) or return undef;
 	"var $name = $value;";
 }
 
 # Create a Javascript array given the javascript array name
 # and a reference to the array.
 sub var_array {
-	my $class = shift;
-	my $name = shift or return undef;
+	my $class     = shift;
+	my $name      = shift or return undef;
 	my $array_ref = isa( $_[0], 'ARRAY' ) ? shift : return undef;
-	my $list = join ', ', map { $class->anon_dump($_) } @$array_ref;
+	my $list      = join ', ', map { $class->anon_dump($_) } @$array_ref;
 	"var $name = new Array( $list );";
 }
 
 # Create a Javascript hash ( which is just an object ), given
 # the variable name, and a reference to a hash.
 sub var_hash {
-	my $class = shift;
-	my $name = shift or return undef;
+	my $class    = shift;
+	my $name     = shift or return undef;
 	my $hash_ref = isa( $_[0], 'HASH' ) ? shift : return undef;
-	my $struct = $class->anon_hash( $hash_ref ) or return undef;
+	my $struct   = $class->anon_hash( $hash_ref ) or return undef;
 	"var $name = $struct;";
 }
 
@@ -161,7 +159,8 @@ sub anon_scalar {
 	# Don't quote if it is numeric
 	return $value if $value =~ /$RE_NUMERIC/;
 
-	$value =~ s/"/\\"/g;
+	# Escape double quotes and forward slashes in strings
+	$value =~ s/(\\|\")/\\$1/g;
 	'"' . $value . '"';
 }
 
@@ -182,20 +181,20 @@ sub anon_hash_key {
 # Create a Javascript array given the javascript array name
 # and a reference to the array.
 sub anon_array {
-	my $class = shift;
-	my $name = shift or return undef;
+	my $class     = shift;
+	my $name      = shift or return undef;
 	my $array_ref = isa( $_[0], 'ARRAY' ) ? shift : return undef;
-	my $list = join ', ', map { $class->anon_scalar($_) } @$array_ref;
+	my $list      = join ', ', map { $class->anon_scalar($_) } @$array_ref;
 	"[ $list ]";
 }
 
 # Create a Javascript hash ( which is just an object ), given
 # the variable name, and a reference to a hash.
 sub anon_hash {
-	my $class = shift;
-	my $name = shift or return undef;
+	my $class    = shift;
+	my $name     = shift or return undef;
 	my $hash_ref = isa( $_[0], 'HASH' ) ? shift : return undef;
-	my $pairs = join ', ', map { 
+	my $pairs    = join ', ', map { 
 			$class->anon_hash_key( $_ )
 				. ': '
 				. $class->anon_scalar( $hash_ref->{$_} )
@@ -211,7 +210,7 @@ sub anon_hash {
 # Utility and Error Methods
 
 sub _err_found_twice {
-	my $class = shift;
+	my $class     = shift;
 	my $something = ref $_[0] || 'a reference';
 	$errstr = "Found $something in your dump more than once. "
 		. "Data::JavaScript::Anon does not support complex, "
@@ -220,7 +219,7 @@ sub _err_found_twice {
 }
 
 sub _err_not_supported {
-	my $class = shift;
+	my $class     = shift;
 	my $something = ref $_[0] || 'A reference of unknown type';
 	$errstr = "$something was found in the dump struct. "
 		. "Data::JavaScript::Anon only supports objects based on, "

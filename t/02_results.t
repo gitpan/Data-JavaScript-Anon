@@ -1,17 +1,22 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
-# Formal testing for Data::JavaScript::Anon
-
-# This only tests that it loads successfully
+# Testing for Data::JavaScript::Anon
 
 use strict;
-use lib '../../modules'; # For development testing
-use lib '../lib'; # For installation testing
+use lib ();
 use UNIVERSAL 'isa';
-use Test::More tests => 70;
-use Data::JavaScript::Anon;
+use File::Spec::Functions ':ALL';
+BEGIN {
+	$| = 1;
+	unless ( $ENV{HARNESS_ACTIVE} ) {
+		require FindBin;
+		chdir ($FindBin::Bin = $FindBin::Bin); # Avoid a warning
+		lib->import( catdir( updir(), updir(), 'modules') );
+	}
+}
 
-BEGIN { $| = 1 }
+use Test::More tests => 73;
+use Data::JavaScript::Anon;
 
 # Thoroughly test the numeric tests
 my @numbers = qw{
@@ -38,6 +43,19 @@ foreach ( @not_numbers ) {
 
 # Do a simple test of most of the code in a single go
 my $rv = Data::JavaScript::Anon->anon_dump( [ 'a', 1, { a => { a => 1, } }, \"foo" ] );
-is( $rv, '[ "a", 1, { a: { a: 1 } }, "foo" ]', 'Generates expected output for simple combination struct' );
+is( $rv, '[ "a", 1, { a: { a: 1 } }, "foo" ]',
+	'Generates expected output for simple combination struct' );
+
+# Test for CPAN bug #7183
+is( Data::JavaScript::Anon->anon_hash_key( "0596000278" ), '"0596000278"',
+	'anon_hash_key correctly escapes 0-leading non-octal' );
+
+# Test for CPAN bug #11882 (forward slash not being escaped)
+is( Data::JavaScript::Anon->anon_scalar( 'C:\\devel' ), '"C:\\\\devel"',
+	'anon_scalar correctly escapes forward slashes' );
+
+# Also make sure double quotes are escaped
+is( Data::JavaScript::Anon->anon_scalar( 'foo"bar' ), '"foo\\"bar"',
+	'anon_scalar correctly escapes double quotes' );
 
 1;

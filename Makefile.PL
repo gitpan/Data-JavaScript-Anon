@@ -1,14 +1,16 @@
-require 5.000;
-use ExtUtils::MakeMaker;
-WriteMakefile(
-	'NAME'         => 'Data::JavaScript::Anon',
-	'VERSION_FROM' => 'lib/Data/JavaScript/Anon.pm',
-	'PREREQ_PM'    => {
-		# For the tests
-		'Test::More'       => 0,
-	},
-	($] >= 5.005) ? (
-		'AUTHOR'     => 'Adam Kennedy (cpan@ali.as)',
-		'ABSTRACT'   => 'Dump to anonymous JavaScript structs',
-	) : (),
-);
+use inc::Module::Install;
+
+name          ( 'Data-JavaScript-Anon'        );
+abstract      ( 'Dump to anonymous JavaScript structs' );
+author        ( 'Adam Kennedy<cpan@ali.as>'   );
+version_from  ( 'lib/Data/JavaScript/Anon.pm' );
+license       ( 'perl'                        );
+
+requires      ( 'perl'             => '5.005' );
+
+build_requires( 'File::Spec'       => '0.82'  );
+build_requires( 'Test::More'       => '0.47'  );
+
+auto_install();
+
+&WriteAll;

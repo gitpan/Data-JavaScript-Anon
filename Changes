@@ -1,5 +1,11 @@
 Revision history for Perl extension Data::JavaScript::Anon
 
+0.4  Fri Mar 25 2005
+	- Escape forward slashes correctly in strings (CPAN #11882)
+	- Removed SGML comments from script_wrap (CPAN #11646)
+	- Upgrade unit tests to current style
+	- Upgrade Makefile.PL to Module::Install
+
 0.3  Wed Aug  4 2004
 	- Converted word regex to something that actually detects words
 	- Fixed some minor error string bug to use Data::JavaScript::Anon
