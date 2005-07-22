@@ -1,6 +1,6 @@
 NAME
-    Data::JavaScript::Anon - Create big, dumb and/or anonymous data
-    structures in JavaScript
+    Data::JavaScript::Anon - Dump big dumb Perl structs to anonymous
+    JavaScript structs
 
 SYNOPSIS
       # Dump an arbitrary structure to javascript
@@ -31,7 +31,7 @@ DESCRIPTION
     could use a simple Template Toolkit phrase like the following to get
     data into your HTML templates.
 
-      var javascript_data = [% data $];
+      var javascript_data = [% data %];
 
     In this way, it doesn't matter WHAT the HTML template calls a particular
     variables, the data dumps just the same. This could help you keep the
@@ -91,7 +91,7 @@ MAIN METHODS
     about everything legal in JavaScript, with the one exception of the
     exotics, such as Infinite, -Infinit and NaN.
 
-    Returns true is a scalar is numberic, or false otherwise.
+    Returns true is a scalar is numeric, or false otherwise.
 
 SECONDARY METHODS
     The following are a little less general, but may be of some use.

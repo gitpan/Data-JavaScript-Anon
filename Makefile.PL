@@ -1,13 +1,11 @@
 use inc::Module::Install;
 
 name          ( 'Data-JavaScript-Anon'        );
-abstract      ( 'Dump to anonymous JavaScript structs' );
-author        ( 'Adam Kennedy<cpan@ali.as>'   );
+abstract      ( 'Dump big dumb Perl structs to anonymous JavaScript structs' );
+author        ( 'Adam Kennedy <cpan@ali.as>'  );
 version_from  ( 'lib/Data/JavaScript/Anon.pm' );
 license       ( 'perl'                        );
-
 requires      ( 'perl'             => '5.005' );
-
 build_requires( 'File::Spec'       => '0.82'  );
 build_requires( 'Test::More'       => '0.47'  );
 

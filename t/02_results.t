@@ -15,7 +15,7 @@ BEGIN {
 	}
 }
 
-use Test::More tests => 73;
+use Test::More tests => 74;
 use Data::JavaScript::Anon;
 
 # Thoroughly test the numeric tests
@@ -57,5 +57,10 @@ is( Data::JavaScript::Anon->anon_scalar( 'C:\\devel' ), '"C:\\\\devel"',
 # Also make sure double quotes are escaped
 is( Data::JavaScript::Anon->anon_scalar( 'foo"bar' ), '"foo\\"bar"',
 	'anon_scalar correctly escapes double quotes' );
+
+# Test for generalised case of CPAN bug # (newline not being escaped)
+$rv = Data::JavaScript::Anon->anon_dump( [ "a\nb", "a\rb", "a	b", "a\"b", "a\bb" ] );
+is( $rv, '[ "a\nb", "a\rb", "a\tb", "a\\"b", "a\010b" ]', 'escape tabs, newlines, CRs and control chars');
+
 
 1;

@@ -1,7 +1,7 @@
 name: Data-JavaScript-Anon
-version: 0.4
-abstract: Dump to anonymous JavaScript structs
-author: Adam Kennedy<cpan@ali.as>
+version: 0.5
+abstract: Dump big dumb Perl structs to anonymous JavaScript structs
+author: Adam Kennedy <cpan@ali.as>
 license: perl
 distribution_type: module
 build_requires:

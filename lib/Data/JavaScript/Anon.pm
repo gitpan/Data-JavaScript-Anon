@@ -9,7 +9,7 @@ use UNIVERSAL 'isa';
 
 use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY};
 BEGIN {
-	$VERSION = '0.4';
+	$VERSION = '0.5';
 	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
@@ -159,9 +159,8 @@ sub anon_scalar {
 	# Don't quote if it is numeric
 	return $value if $value =~ /$RE_NUMERIC/;
 
-	# Escape double quotes and forward slashes in strings
-	$value =~ s/(\\|\")/\\$1/g;
-	'"' . $value . '"';
+	# Escape and quote
+	'"' . _escape($value) . '"';
 }
 
 # Turn a single perl value into a javascript hash key
@@ -174,8 +173,7 @@ sub anon_hash_key {
 	return $value if $value =~ /$RE_NUMERIC_HASHKEY/;
 
 	# Escape and quote
-	$value =~ s/"/\\"/g;
-	'"' . $value . '"';
+	'"' . _escape($value) . '"';
 }
 
 # Create a Javascript array given the javascript array name
@@ -209,6 +207,16 @@ sub anon_hash {
 #####################################################################
 # Utility and Error Methods
 
+sub _escape {
+	my $text = shift;
+	$text =~ s/(\"|\\)/\\$1/g;                              # Escape quotes and backslashes
+	$text =~ s/\n/\\n/g;                                    # Escape newlines in a readable way
+	$text =~ s/\r/\\r/g;                                    # Escape CRs in a readable way
+	$text =~ s/\t/\\t/g;                                    # Escape tabs in a readable way
+	$text =~ s/([\x00-\x1F])/sprintf("\\%03o", ord($1))/ge; # Escape other control chars as octal
+	$text;
+}
+
 sub _err_found_twice {
 	my $class     = shift;
 	my $something = ref $_[0] || 'a reference';
@@ -233,7 +241,7 @@ __END__
 
 =head1 NAME
 
-Data::JavaScript::Anon - Create big, dumb and/or anonymous data structures in JavaScript
+Data::JavaScript::Anon - Dump big dumb Perl structs to anonymous JavaScript structs
 
 =head1 SYNOPSIS
 
@@ -266,7 +274,7 @@ co-ordinate variable names between your HTML templates and Perl. You
 could use a simple Template Toolkit phrase like the following to get
 data into your HTML templates.
 
-  var javascript_data = [% data $];
+  var javascript_data = [% data %];
 
 In this way, it doesn't matter WHAT the HTML template calls a
 particular variables, the data dumps just the same. This could help
@@ -336,7 +344,7 @@ that is used to see if something is a number. The test handles just about
 everything legal in JavaScript, with the one exception of the exotics, such
 as Infinite, -Infinit and NaN.
 
-Returns true is a scalar is numberic, or false otherwise.
+Returns true is a scalar is numeric, or false otherwise.
 
 =head1 SECONDARY METHODS
 

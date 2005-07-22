@@ -1,5 +1,8 @@
 Revision history for Perl extension Data::JavaScript::Anon
 
+0.5  Sat Jul 23 2005
+	- Merged in patch from John Alden at the BBC to handle various escaping things
+
 0.4  Fri Mar 25 2005
 	- Escape forward slashes correctly in strings (CPAN #11882)
 	- Removed SGML comments from script_wrap (CPAN #11646)
