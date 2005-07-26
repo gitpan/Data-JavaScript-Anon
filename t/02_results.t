@@ -15,7 +15,7 @@ BEGIN {
 	}
 }
 
-use Test::More tests => 74;
+use Test::More;
 use Data::JavaScript::Anon;
 
 # Thoroughly test the numeric tests
@@ -31,6 +31,18 @@ my @not_numbers = qw{
 	a 09 +09 -09 ++1 +-34 
 	3com 2131.231fd2132 +0x21x
 };
+
+my @keywords = qw{
+        abstract boolean break byte case catch char class const continue
+        debugger default delete do double else enum export extends false final
+        finally float for function goto if implements import in instanceof int
+        interface long native new null package private protected public return
+        short static super switch synchronized this throw throws transient true
+        try typeof var void volatile while with
+};
+
+plan tests => (@numbers + @not_numbers + @keywords + 5);
+
 foreach ( @numbers ) {
 	ok( Data::JavaScript::Anon->is_a_number( $_ ), "$_ is a number" );
 }
@@ -38,6 +50,11 @@ foreach ( @not_numbers ) {
 	ok( ! Data::JavaScript::Anon->is_a_number( $_ ), "$_ is not a number" );
 }
 
+# Test that keywords come out quoted
+foreach ( @keywords ) {
+        is( Data::JavaScript::Anon->anon_hash_key($_), '"' . $_ . '"',
+            "anon_hash_key correctly quotes keyword $_ used as hash key" );
+}
 
 
 

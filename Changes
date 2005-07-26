@@ -1,5 +1,8 @@
 Revision history for Perl extension Data::JavaScript::Anon
 
+0.6  Tue Jul 26 2005
+	- Merged in patch from ARC@cpan.org to quote keywords.
+
 0.5  Sat Jul 23 2005
 	- Merged in patch from John Alden at the BBC to handle various escaping things
 

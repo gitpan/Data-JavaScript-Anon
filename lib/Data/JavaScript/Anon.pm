@@ -7,9 +7,9 @@ package Data::JavaScript::Anon;
 use strict;
 use UNIVERSAL 'isa';
 
-use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY};
+use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY %KEYWORD};
 BEGIN {
-	$VERSION = '0.5';
+	$VERSION = '0.6';
 	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
@@ -28,6 +28,16 @@ BEGIN {
 
 	# The numeric for of the hash key is similar, but without the + or - allowed
 	$RE_NUMERIC_HASHKEY = qr/^(?:$real|$_hex|$_oct)$/;
+
+	%KEYWORD = map { $_ => 1 } qw{
+		abstract boolean break byte case catch char class const
+		continue debugger default delete do double else enum export
+		extends false final finally float for function goto if
+		implements import in instanceof int interface long native new
+		null package private protected public return short static super
+		switch synchronized this throw throws transient true try typeof
+		var void volatile while with
+		};
 }
 
 
@@ -167,6 +177,9 @@ sub anon_scalar {
 sub anon_hash_key {
 	my $class = shift;
 	my $value = (defined $_[0] and ! ref $_[0]) ? shift : return undef;
+
+	# Quote if it's a keyword
+	return '"' . $value . '"' if $KEYWORD{$value};
 
 	# Don't quote if it is just a set of word characters or numeric
 	return $value if $value =~ /^[^\W\d]\w*$/;
