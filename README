@@ -120,13 +120,12 @@ SECONDARY METHODS
 SUPPORT
     Bugs should be reported via the CPAN bug tracker at:
 
-    http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data%3A%3AJavaScript%3A%3
-    AAnon
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data-JavaScript-Anon>
 
     For other comments or queries, contact the author.
 
 AUTHOR
-    Adam Kennedy (Maintainer), <http://ali.as/>, cpan@ali.as
+    Adam Kennedy <cpan@ali.as>, <http://ali.as/>
 
 COPYRIGHT
     Copyright (c) 2003 Adam Kennedy. All rights reserved. This program is

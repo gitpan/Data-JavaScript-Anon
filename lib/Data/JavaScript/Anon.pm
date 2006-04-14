@@ -4,12 +4,13 @@ package Data::JavaScript::Anon;
 # into JavaScript structures, making it easier to transfer data
 # from Perl to JavaScript.
 
+use 5.005;
 use strict;
-use UNIVERSAL 'isa';
+use Params::Util qw{ _STRING _SCALAR0 _ARRAY0 _HASH0 };
 
 use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY %KEYWORD};
 BEGIN {
-	$VERSION = '0.6';
+	$VERSION = '0.7';
 	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
@@ -69,19 +70,19 @@ sub anon_dump {
 
 	# Handle the SCALAR reference case, which in our case we treat
 	# like a normal scalar.
-	if ( isa( $something, 'SCALAR' ) ) {
+	if ( _SCALAR0($something) ) {
 		return $class->anon_scalar( $something );
 	}
 
 	# Handle the array case by generating an anonymous array
-	if ( isa( $something, 'ARRAY' ) ) {
+	if ( _ARRAY0($something) ) {
 		# Create and return the array
 		my $list = join ', ', map { $class->anon_dump($_, $processed) } @$something;
 		return "[ $list ]";
 	}
 
 	# Handle the hash case by generating an anonymous object/hash
-	if ( isa( $something, 'HASH' ) ) {
+	if ( _HASH0($something) ) {
 		# Create and return the anonymous hash
 		my $pairs = join ', ', map {
 				$class->anon_hash_key( $_ )
@@ -123,32 +124,32 @@ sub is_a_number {
 #####################################################################
 # Basic Variable Creation Statements
 
-# Create a Javascript scalar given the javascript variable name
+# Create a JavaScript scalar given the javascript variable name
 # and a reference to the scalar.
 sub var_scalar {
 	my $class      = shift;
 	my $name       = shift or return undef;
-	my $scalar_ref = isa( $_[0], 'SCALAR' ) ? shift : return undef;
+	my $scalar_ref = _SCALAR0(shift) or return undef;
 	my $value      = $class->js_value( $$scalar_ref ) or return undef;
 	"var $name = $value;";
 }
 
-# Create a Javascript array given the javascript array name
+# Create a JavaScript array given the javascript array name
 # and a reference to the array.
 sub var_array {
 	my $class     = shift;
 	my $name      = shift or return undef;
-	my $array_ref = isa( $_[0], 'ARRAY' ) ? shift : return undef;
+	my $array_ref = _ARRAY0(shift) or return undef;
 	my $list      = join ', ', map { $class->anon_dump($_) } @$array_ref;
 	"var $name = new Array( $list );";
 }
 
-# Create a Javascript hash ( which is just an object ), given
+# Create a JavaScript hash ( which is just an object ), given
 # the variable name, and a reference to a hash.
 sub var_hash {
 	my $class    = shift;
 	my $name     = shift or return undef;
-	my $hash_ref = isa( $_[0], 'HASH' ) ? shift : return undef;
+	my $hash_ref = _HASH0(shift) or return undef;
 	my $struct   = $class->anon_hash( $hash_ref ) or return undef;
 	"var $name = $struct;";
 }
@@ -163,7 +164,7 @@ sub var_hash {
 # Turn a single perl value into a single javascript value
 sub anon_scalar {
 	my $class = shift;
-	my $value = isa( $_[0], 'SCALAR' ) ? ${shift()} : shift;
+	my $value = _SCALAR0($_[0]) ? ${shift()} : shift;
 	return 'null' unless defined $value;
 
 	# Don't quote if it is numeric
@@ -176,7 +177,7 @@ sub anon_scalar {
 # Turn a single perl value into a javascript hash key
 sub anon_hash_key {
 	my $class = shift;
-	my $value = (defined $_[0] and ! ref $_[0]) ? shift : return undef;
+	my $value = _STRING($_[0]) ? shift : return undef;
 
 	# Quote if it's a keyword
 	return '"' . $value . '"' if $KEYWORD{$value};
@@ -189,22 +190,22 @@ sub anon_hash_key {
 	'"' . _escape($value) . '"';
 }
 
-# Create a Javascript array given the javascript array name
+# Create a JavaScript array given the javascript array name
 # and a reference to the array.
 sub anon_array {
 	my $class     = shift;
 	my $name      = shift or return undef;
-	my $array_ref = isa( $_[0], 'ARRAY' ) ? shift : return undef;
+	my $array_ref = _ARRAY0(shift) or return undef;
 	my $list      = join ', ', map { $class->anon_scalar($_) } @$array_ref;
 	"[ $list ]";
 }
 
-# Create a Javascript hash ( which is just an object ), given
+# Create a JavaScript hash ( which is just an object ), given
 # the variable name, and a reference to a hash.
 sub anon_hash {
 	my $class    = shift;
 	my $name     = shift or return undef;
-	my $hash_ref = isa( $_[0], 'HASH' ) ? shift : return undef;
+	my $hash_ref = _HASH0(shift) or return undef;
 	my $pairs    = join ', ', map { 
 			$class->anon_hash_key( $_ )
 				. ': '
@@ -395,13 +396,13 @@ Applys the formatting for a key in a JavaScript object
 
 Bugs should be reported via the CPAN bug tracker at:
 
-http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data%3A%3AJavaScript%3A%3AAnon
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data-JavaScript-Anon>
 
 For other comments or queries, contact the author.
 
 =head1 AUTHOR
 
-Adam Kennedy (Maintainer), L<http://ali.as/>, cpan@ali.as
+Adam Kennedy E<lt>cpan@ali.asE<gt>, L<http://ali.as/>
 
 =head1 COPYRIGHT
 

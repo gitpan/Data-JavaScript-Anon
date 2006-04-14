@@ -1,5 +1,11 @@
 Revision history for Perl extension Data::JavaScript::Anon
 
+0.7  Sat 15 Apr 2006
+	- No functional changes
+	- Moved from old CVS repository to new SVN one
+	- Direct use of UNIVERSAL::isa considered bad, moved to Params::Util
+	- Upgraded extremely old Module::Install 0.34 to 0.62
+
 0.6  Tue Jul 26 2005
 	- Merged in patch from ARC@cpan.org to quote keywords.
 
