@@ -1,18 +1,17 @@
-
-no_index: 
-  directory: 
+abstract: Dump big dumb Perl structs to anonymous JavaScript structs
+author: 'Adam Kennedy <adamk@cpan.org>'
+build_requires:
+  File::Spec: 0.82
+  Test::More: 0.47
+distribution_type: module
+generated_by: Module::Install version 0.62
+license: perl
+name: Data-JavaScript-Anon
+no_index:
+  directory:
     - inc
     - t
-generated_by: Module::Install version 0.62
-distribution_type: module
-version: 0.8
-name: Data-JavaScript-Anon
-author: Adam Kennedy <cpan@ali.as>
-license: perl
-build_requires: 
-  Test::More: 0.47
-  File::Spec: 0.82
-requires: 
-  perl: 5.005
+requires:
   Params::Util: 0.10
-abstract: Dump big dumb Perl structs to anonymous JavaScript structs
+  perl: 5.005
+version: 0.9
