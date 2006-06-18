@@ -10,7 +10,7 @@ use Params::Util qw{ _STRING _SCALAR0 _ARRAY0 _HASH0 };
 
 use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY %KEYWORD};
 BEGIN {
-	$VERSION = '0.9';
+	$VERSION = '1.00';
 	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
@@ -21,14 +21,14 @@ BEGIN {
 	my $_int = qr/(?:[1-9]\d*|0)/;                      # The integers section ( e.g. '2312' )
 	my $real = qr/(?:$_int(?:$_dec)?|$_dec)(?:$_sci)?/; # Merge the integer, decimal and scientific parts
 	my $_hex = qr/0[xX][0-9a-fA-F]+/;                   # Hexidecimal notation
-	my $_oct = qr/0[0-8]+/;                             # Octal notation
+	my $_oct = qr/0[0-7]+/;                             # Octal notation
 
 	# The final combination of all posibilities for a straight number
 	# The string to match must have no extra characters
-	$RE_NUMERIC = qr/^(?:\+|\-)??(?:$real|$_hex|$_oct)$/;
+	$RE_NUMERIC = qr/^(?:\+|\-)??(?:$real|$_hex|$_oct)\z/;
 
 	# The numeric for of the hash key is similar, but without the + or - allowed
-	$RE_NUMERIC_HASHKEY = qr/^(?:$real|$_hex|$_oct)$/;
+	$RE_NUMERIC_HASHKEY = qr/^(?:$real|$_hex|$_oct)\z/;
 
 	%KEYWORD = map { $_ => 1 } qw{
 		abstract boolean break byte case catch char class const
@@ -177,13 +177,13 @@ sub anon_scalar {
 # Turn a single perl value into a javascript hash key
 sub anon_hash_key {
 	my $class = shift;
-	my $value = _STRING($_[0]) ? shift : return undef;
+	my $value = defined($_[0]) && !ref($_[0]) ? shift : return undef;
 
 	# Quote if it's a keyword
 	return '"' . $value . '"' if $KEYWORD{$value};
 
 	# Don't quote if it is just a set of word characters or numeric
-	return $value if $value =~ /^[^\W\d]\w*$/;
+	return $value if $value =~ /^[^\W\d]\w*\z/;
 	return $value if $value =~ /$RE_NUMERIC_HASHKEY/;
 
 	# Escape and quote

@@ -4,7 +4,7 @@ build_requires:
   File::Spec: 0.82
   Test::More: 0.47
 distribution_type: module
-generated_by: Module::Install version 0.62
+generated_by: Module::Install version 0.63
 license: perl
 name: Data-JavaScript-Anon
 no_index:
@@ -14,4 +14,4 @@ no_index:
 requires:
   Params::Util: 0.10
   perl: 5.005
-version: 0.9
+version: 1.00
