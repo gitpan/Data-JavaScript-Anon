@@ -1,16 +1,19 @@
 package Data::JavaScript::Anon;
 
-# This package provides a mechanism to convert the main basic Perl structures
-# into JavaScript structures, making it easier to transfer data
-# from Perl to JavaScript.
+# This package provides a mechanism to convert the main basic Perl
+# structures into JavaScript structures, making it easier to transfer
+# data from Perl to JavaScript.
 
-use 5.005;
+use 5.006;
 use strict;
-use Params::Util qw{ _STRING _SCALAR0 _ARRAY0 _HASH0 };
+use warnings;
+use Params::Util   qw{ _STRING _SCALAR0 _ARRAY0 _HASH0 };
+use Class::Default ();
 
-use vars qw{$VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY %KEYWORD};
+use vars qw{@ISA $VERSION $errstr $RE_NUMERIC $RE_NUMERIC_HASHKEY %KEYWORD};
 BEGIN {
-	$VERSION = '1.01';
+	$VERSION = '1.03';
+	@ISA     = 'Class::Default';
 	$errstr  = '';
 
 	# Attempt to define a single, all encompasing,
@@ -38,7 +41,7 @@ BEGIN {
 		null package private protected public return short static super
 		switch synchronized this throw throws transient true try typeof
 		var void volatile while with
-		};
+	};
 }
 
 
@@ -47,6 +50,30 @@ BEGIN {
 
 #####################################################################
 # Top Level Dumping Methods
+
+sub new {
+	my $proto = shift;
+	my $class = ref $proto || $proto;
+	my $opts  = _HASH0($_[0]) ? shift : { @_ };
+
+	# Create the object
+	my $self = bless {
+		quote_char => '"',
+	}, $class;
+
+	## change the default quote character
+	if ( defined $opts->{quote_char} && length $opts->{quote_char} ) {
+		$self->{quote_char} = $opts->{quote_char};
+	}
+
+	return $self;
+}
+
+sub _create_default_object {
+	my $class = shift;
+	my $self  = $class->new();
+	return $self;
+}
 
 sub anon_dump {
 	my $class     = shift;
@@ -85,10 +112,10 @@ sub anon_dump {
 	if ( _HASH0($something) ) {
 		# Create and return the anonymous hash
 		my $pairs = join ', ', map {
-				$class->anon_hash_key( $_ )
-					. ': '
-					. $class->anon_dump( $something->{$_}, $processed )
-				} keys %$something;
+			$class->anon_hash_key($_)
+				. ': '
+				. $class->anon_dump( $something->{$_}, $processed )
+		} keys %$something;
 		return "{ $pairs }";
 	}
 
@@ -170,8 +197,10 @@ sub anon_scalar {
 	# Don't quote if it is numeric
 	return $value if $value =~ /$RE_NUMERIC/;
 
+	my $quote_char = $class->_self->{quote_char};
+
 	# Escape and quote
-	'"' . _escape($value) . '"';
+	$quote_char . $class->_escape($value) . $quote_char;
 }
 
 # Turn a single perl value into a javascript hash key
@@ -179,15 +208,17 @@ sub anon_hash_key {
 	my $class = shift;
 	my $value = defined($_[0]) && !ref($_[0]) ? shift : return undef;
 
+	my $quote_char = $class->_self->{quote_char};
+
 	# Quote if it's a keyword
-	return '"' . $value . '"' if $KEYWORD{$value};
+	return $quote_char . $value . $quote_char if $KEYWORD{$value};
 
 	# Don't quote if it is just a set of word characters or numeric
 	return $value if $value =~ /^[^\W\d]\w*\z/;
 	return $value if $value =~ /$RE_NUMERIC_HASHKEY/;
 
 	# Escape and quote
-	'"' . _escape($value) . '"';
+	$quote_char . $class->_escape($value) . $quote_char;
 }
 
 # Create a JavaScript array given the javascript array name
@@ -207,10 +238,10 @@ sub anon_hash {
 	my $name     = shift or return undef;
 	my $hash_ref = _HASH0(shift) or return undef;
 	my $pairs    = join ', ', map { 
-			$class->anon_hash_key( $_ )
-				. ': '
-				. $class->anon_scalar( $hash_ref->{$_} )
-			} keys %$hash_ref;
+		$class->anon_hash_key( $_ )
+			. ': '
+			. $class->anon_scalar( $hash_ref->{$_} )
+	} keys %$hash_ref;
 	"{ $pairs }";
 }
 
@@ -222,8 +253,10 @@ sub anon_hash {
 # Utility and Error Methods
 
 sub _escape {
-	my $text = shift;
-	$text =~ s/(\"|\\)/\\$1/g;                              # Escape quotes and backslashes
+	my $class = shift;
+	my $text  = shift;
+	my $char  = $class->_self->{quote_char};
+	$text =~ s/(\Q$char\E|\\)/\\$1/g;                       # Escape quotes and backslashes
 	$text =~ s/\n/\\n/g;                                    # Escape newlines in a readable way
 	$text =~ s/\r/\\r/g;                                    # Escape CRs in a readable way
 	$text =~ s/\t/\\t/g;                                    # Escape tabs in a readable way
@@ -252,6 +285,8 @@ sub _err_not_supported {
 1;
 
 __END__
+
+=pod
 
 =head1 NAME
 
@@ -360,6 +395,16 @@ as Infinite, -Infinit and NaN.
 
 Returns true is a scalar is numeric, or false otherwise.
 
+You may also access method in using an instantiated object.
+
+=head2 new HASH
+
+This will create a Data::JavaScript::Anon object that will allow you to change
+some of the default behaviors of some methods.
+
+    Options:
+        quote_char  : Set the quote_char for stirng scalars. Default is '"'.
+
 =head1 SECONDARY METHODS
 
 The following are a little less general, but may be of some use.
@@ -410,7 +455,7 @@ L<JSON>, L<http://ali.as/>
 
 =head1 COPYRIGHT
 
-Copyright 2003 - 2008 Adam Kennedy.
+Copyright 2003 - 2009 Adam Kennedy.
 
 This program is free software; you can redistribute
 it and/or modify it under the same terms as Perl itself.

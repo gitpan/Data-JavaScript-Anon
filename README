@@ -16,14 +16,14 @@ DESCRIPTION
 
       # Perl anonymous array
       [ 1, 'a', 'Foo Bar' ]
-  
-      # JavaScript equivalent ( yes, it's exactly the same )
+      
+  # JavaScript equivalent ( yes, it's exactly the same )
       [ 1, 'a', 'Foo Bar' ]
-  
-      # Perl anonymous hash
+      
+  # Perl anonymous hash
       { foo => 1, bar => 'bar' }
-  
-      # JavaScript equivalent
+      
+  # JavaScript equivalent
       { foo: 1, bar: 'bar' }
 
     One advantage of doing it in this method is that you do not have to
@@ -93,6 +93,15 @@ MAIN METHODS
 
     Returns true is a scalar is numeric, or false otherwise.
 
+    You may also access method in using an instantiated object.
+
+  new HASH
+    This will create a Data::JavaScript::Anon object that will allow you to
+    change some of the default behaviors of some methods.
+
+        Options:
+            quote_char  : Set the quote_char for stirng scalars. Default is '"'.
+
 SECONDARY METHODS
     The following are a little less general, but may be of some use.
 
@@ -131,7 +140,7 @@ SEE ALSO
     JSON, <http://ali.as/>
 
 COPYRIGHT
-    Copyright 2003 - 2008 Adam Kennedy.
+    Copyright 2003 - 2009 Adam Kennedy.
 
     This program is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
